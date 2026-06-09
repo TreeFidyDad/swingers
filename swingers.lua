@@ -30,20 +30,64 @@ local swing = {
     samples    = {},
 }
 
+------------------------------------------------------------
+-- Martial Arts delay reduction (MNK trait)
+-- Only MNK main job gets this. Sub-MNK does not.
+-- Tiers match HorizonXI (retail base-era values).
+------------------------------------------------------------
+local MNK_MARTIAL_ARTS = {
+    { lvl = 15, reduction =  50 },
+    { lvl = 25, reduction =  75 },
+    { lvl = 40, reduction = 100 },
+    { lvl = 55, reduction = 125 },
+    { lvl = 70, reduction = 150 },
+}
+
+local function get_martial_arts_reduction()
+    local ok, r = pcall(function()
+        local pl = AshitaCore:GetMemoryManager():GetPlayer()
+        if pl:GetMainJob() ~= 2 then return 0 end  -- not MNK main
+        local mlvl = pl:GetMainJobLevel() or 0
+        local best = 0
+        for _, tier in ipairs(MNK_MARTIAL_ARTS) do
+            if mlvl >= tier.lvl then best = tier.reduction end
+        end
+        return best
+    end)
+    return (ok and r) or 0
+end
+
 local function get_main_weapon_delay()
     local ok, delay = pcall(function()
         local inv = AshitaCore:GetMemoryManager():GetInventory()
         local eq = inv:GetEquippedItem(0)  -- slot 0 = main hand
-        if not eq or eq.Index == 0 then return nil end
-        local container = math.floor(eq.Index / 0x100)
-        local slot = eq.Index % 0x100
-        local item = inv:GetContainerItem(container, slot)
-        if not item or item.Id == 0 then return nil end
-        local res = AshitaCore:GetResourceManager():GetItemById(item.Id)
-        if not res or not res.Delay or res.Delay == 0 then return nil end
-        if res.Skill == 1 then
-            return (480 + res.Delay) / 60.0
+        local has_main = eq and eq.Index ~= 0
+        local res = nil
+        if has_main then
+            local container = math.floor(eq.Index / 0x100)
+            local slot = eq.Index % 0x100
+            local item = inv:GetContainerItem(container, slot)
+            if item and item.Id ~= 0 then
+                res = AshitaCore:GetResourceManager():GetItemById(item.Id)
+            end
         end
+
+        -- H2H / bare-hand MNK detection
+        local pl = AshitaCore:GetMemoryManager():GetPlayer()
+        local is_mnk_main = pl:GetMainJob() == 2
+        local is_h2h_weapon = res and res.Skill == 1
+        local is_barehand = (not has_main) and is_mnk_main
+
+        if is_h2h_weapon or is_barehand then
+            local base = 480
+            local weapon_delay = (res and res.Delay) or 0
+            local ma = get_martial_arts_reduction()
+            local effective = base + weapon_delay - ma
+            if effective < 96 then effective = 96 end
+            return effective / 60.0
+        end
+
+        if not res or not res.Delay or res.Delay == 0 then return nil end
         return res.Delay / 60.0
     end)
     return ok and delay or nil
@@ -74,11 +118,6 @@ local function record_swing()
 end
 
 local function get_swing_data()
-    -- Prefer HuntPartner's global getter if available
-    if _G.HuntPartnerGetPlayerSwingData then
-        local hp = _G.HuntPartnerGetPlayerSwingData()
-        if hp then return hp end
-    end
     local interval = swing.interval or get_main_weapon_delay()
     if not interval then return nil end
     local src

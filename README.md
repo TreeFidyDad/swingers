@@ -16,7 +16,8 @@ The arc uses a **cyan → yellow → red** color gradient so you can see at a gl
 - **Pendulum bob** at the leading edge (turns red when swing is imminent)
 - **White flash** on swing land for clear visual feedback
 - **Draggable** — position it anywhere on screen
-- Works standalone or integrates with [HuntPartner](https://github.com/TreeFidyDad/huntpartner) for enhanced swing data
+- **MNK Martial Arts** support — proper H2H delay calculation with tier-based reduction
+- **Bare-hand detection** — works even with no weapon equipped on MNK
 
 ---
 
@@ -46,9 +47,7 @@ The arc uses a **cyan → yellow → red** color gradient so you can see at a gl
 
 ## How It Works
 
-Swingers monitors action packet `0x28` (melee swings) and builds a rolling average of your swing interval.
-
-If [HuntPartner](https://github.com/TreeFidyDad/huntpartner) is loaded, it uses HuntPartner's more sophisticated swing data (including MNK Martial Arts handling) automatically.
+Swingers monitors action packet `0x28` (melee swings) and builds a rolling average of your swing interval. It includes full MNK Martial Arts tier handling (levels 15/25/40/55/70) and proper H2H delay formula (`480 + weapon_delay - MA_reduction`), so it works correctly for all jobs without any other addons.
 
 Settings are saved per-character via Ashita's settings library.
 
