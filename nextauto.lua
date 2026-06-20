@@ -356,6 +356,11 @@ ashita.events.register('d3d_present', 'nextauto_render_cb', function()
 
     imgui.SetNextWindowSize({ win_w, win_h }, ImGuiCond_Always)
 
+    -- Zero the window padding so our own `pad` margin fully controls spacing;
+    -- otherwise ImGui's default padding shifts the content past the window edge
+    -- and the draw-list clip rect slices off the arc's corners.
+    imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 })
+
     local pushed_bg = false
     if cfg.background then
         imgui.PushStyleColor(ImGuiCol_WindowBg, { cfg.bg_color[1], cfg.bg_color[2], cfg.bg_color[3], cfg.bg_color[4] or 0.6 })
@@ -433,6 +438,7 @@ ashita.events.register('d3d_present', 'nextauto_render_cb', function()
     imgui.End()
 
     if pushed_bg then imgui.PopStyleColor(1) end
+    imgui.PopStyleVar(1)
 end)
 
 ------------------------------------------------------------
