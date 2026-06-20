@@ -69,10 +69,12 @@ sliders, checkboxes, and color pickers — settings save automatically per chara
 | `/nextauto show` / `hide` | Show or hide the timer |
 | `/nextauto lock` / `unlock` | Lock or unlock position |
 | `/nextauto reset` | Reset all settings to defaults |
+| `/nextauto preset NAME` | Apply a color preset: `classic`, `ion`, or `frost` |
 | `/nextauto length N` | Set the span |
 | `/nextauto thickness N` | Set the stroke thickness |
 | `/nextauto segments N` | Set smoothness |
-| `/nextauto curve F` | Set the curve (0.0–1.0) |
+| `/nextauto curve F` | Set the curve (-1.0–1.0; negative mirrors the arc) |
+| `/nextauto debug` | Toggle action-packet logging (for diagnosing timing) |
 
 The legacy `/swingers` command still works as an alias.
 
@@ -85,9 +87,11 @@ interval. It includes full MNK Martial Arts tier handling (levels 15/25/40/55/70
 the proper H2H delay formula (`480 + weapon_delay - MA_reduction`), so it works
 correctly for all jobs without any other addons.
 
-Weaponskills, job abilities, and spellcasts freeze the timer for the duration of the
-animation lock / cast, then it resumes from where it paused. When you are not engaged
-it hides (or freezes, your choice).
+Weaponskills, job abilities, spellcasts, ranged attacks, pet commands, Dancer
+steps, and RUN actions freeze the timer for the duration of the action's
+animation lock (~2.0s by default), then it resumes from exactly where it
+paused — so the bar never drifts ahead of your real swing. When you are not
+engaged it hides (or freezes, your choice).
 
 Settings are saved per-character via Ashita's settings library.
 

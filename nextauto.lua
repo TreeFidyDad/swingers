@@ -48,6 +48,14 @@ ensure_color('color_mid',   defaultConfig.color_mid)
 ensure_color('color_end',   defaultConfig.color_end)
 ensure_color('bg_color',    defaultConfig.bg_color)
 
+-- Curated color presets (/nextauto preset <name>). Start = just swung,
+-- End = swing ready; End is intentionally the most aggressive color.
+local COLOR_PRESETS = {
+    classic = { name = 'Classic Pulse', s = { 0.20, 1.00, 0.55 }, m = { 1.00, 0.85, 0.10 }, e = { 1.00, 0.15, 0.15 } },
+    ion     = { name = 'Ion',           s = { 0.10, 0.65, 1.00 }, m = { 1.00, 0.20, 0.80 }, e = { 1.00, 0.45, 0.05 } },
+    frost   = { name = 'Frost to Fire',  s = { 0.30, 0.85, 1.00 }, m = { 0.75, 0.55, 1.00 }, e = { 1.00, 0.30, 0.20 } },
+}
+
 ------------------------------------------------------------
 -- Swing tracking state
 ------------------------------------------------------------
@@ -588,6 +596,20 @@ function render_config()
         color3('Mid', 'color_mid')
         color3('End (swing ready)', 'color_end')
 
+        imgui.Text('Presets:'); imgui.SameLine()
+        local function preset_btn(label, key)
+            if imgui.SmallButton(label) then
+                local p = COLOR_PRESETS[key]
+                config.color_start = T{ p.s[1], p.s[2], p.s[3] }
+                config.color_mid   = T{ p.m[1], p.m[2], p.m[3] }
+                config.color_end   = T{ p.e[1], p.e[2], p.e[3] }
+                changed = true
+            end
+        end
+        preset_btn('Classic', 'classic'); imgui.SameLine()
+        preset_btn('Ion', 'ion');         imgui.SameLine()
+        preset_btn('Frost', 'frost')
+
         local bob = { config.show_bob }
         if imgui.Checkbox('Show pendulum bob', bob) then config.show_bob = bob[1]; changed = true end
 
@@ -655,8 +677,18 @@ local function handle_command(args)
     elseif sub == 'debug' then
         debug_log = not debug_log
         print('[NextAuto] Action-packet debug ' .. (debug_log and 'ON (watch the log)' or 'OFF'))
+    elseif sub == 'preset' then
+        local p = COLOR_PRESETS[(args[3] or ''):lower()]
+        if p then
+            config.color_start = T{ p.s[1], p.s[2], p.s[3] }
+            config.color_mid   = T{ p.m[1], p.m[2], p.m[3] }
+            config.color_end   = T{ p.e[1], p.e[2], p.e[3] }
+            print('[NextAuto] Color preset: ' .. p.name)
+        else
+            print('[NextAuto] Presets: classic, ion, frost')
+        end
     else
-        print('[NextAuto] Usage: /nextauto [config|show|hide|lock|unlock|reset|length N|thickness N|segments N|curve F|debug]')
+        print('[NextAuto] Usage: /nextauto [config|show|hide|lock|unlock|reset|preset NAME|length N|thickness N|segments N|curve F|debug]')
     end
     settings.save()
 end
