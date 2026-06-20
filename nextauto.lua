@@ -469,7 +469,13 @@ function render_config()
         if imgui.SliderInt('Smoothness', seg, 2, 128) then config.segments = seg[1]; changed = true end
 
         local cv = { config.curve }
-        if imgui.SliderFloat('Curve (-1..1, 0=straight)', cv, -1.0, 1.0, '%.2f') then config.curve = cv[1]; changed = true end
+        if imgui.SliderFloat('Curve (-1..1, 0=straight)', cv, -1.0, 1.0, '%.2f') then
+            -- Snap to exact 0 within a small deadzone so a flat bar is easy to hit.
+            if math.abs(cv[1]) < 0.04 then cv[1] = 0.0 end
+            config.curve = cv[1]; changed = true
+        end
+        imgui.SameLine()
+        if imgui.SmallButton('Straight') then config.curve = 0.0; changed = true end
 
         local vert = { config.vertical }
         if imgui.Checkbox('Vertical', vert) then config.vertical = vert[1]; changed = true end
