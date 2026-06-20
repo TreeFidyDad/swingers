@@ -244,7 +244,9 @@ local function path_at(cfg, t)
     local curve = cfg.curve
     local arc_along = L * 0.5 - (L * 0.5) * math.cos(math.pi * t)
     local arc_bulge = (L * 0.5) * math.sin(math.pi * t)
-    local along = t * L + (arc_along - t * L) * curve
+    -- abs(curve) controls the along-axis spacing (so the negative side keeps a
+    -- true circular profile); the sign of curve flips the bulge direction.
+    local along = t * L + (arc_along - t * L) * math.abs(curve)
     local bulge = arc_bulge * curve
     if cfg.vertical then
         return bulge, along
@@ -359,7 +361,11 @@ ashita.events.register('d3d_present', 'nextauto_render_cb', function()
     -- Zero the window padding so our own `pad` margin fully controls spacing;
     -- otherwise ImGui's default padding shifts the content past the window edge
     -- and the draw-list clip rect slices off the arc's corners.
+    -- Also drop the minimum window size: when the curve is near-flat the arc is
+    -- only a few pixels tall, and the default 32px minimum would otherwise pad
+    -- the background window out with empty space on the thin axis.
     imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 })
+    imgui.PushStyleVar(ImGuiStyleVar_WindowMinSize, { 1, 1 })
 
     local pushed_bg = false
     if cfg.background then
@@ -438,7 +444,7 @@ ashita.events.register('d3d_present', 'nextauto_render_cb', function()
     imgui.End()
 
     if pushed_bg then imgui.PopStyleColor(1) end
-    imgui.PopStyleVar(1)
+    imgui.PopStyleVar(2)
 end)
 
 ------------------------------------------------------------
@@ -454,16 +460,16 @@ function render_config()
         imgui.Separator()
 
         local len = { config.length }
-        if imgui.SliderInt('Length', len, 20, 240) then config.length = len[1]; changed = true end
+        if imgui.SliderInt('Length', len, 20, 600) then config.length = len[1]; changed = true end
 
         local th = { config.thickness }
         if imgui.SliderInt('Thickness / Height', th, 1, 24) then config.thickness = th[1]; changed = true end
 
         local seg = { config.segments }
-        if imgui.SliderInt('Smoothness', seg, 2, 64) then config.segments = seg[1]; changed = true end
+        if imgui.SliderInt('Smoothness', seg, 2, 128) then config.segments = seg[1]; changed = true end
 
         local cv = { config.curve }
-        if imgui.SliderFloat('Curve (0=straight, 1=arc)', cv, 0.0, 1.0, '%.2f') then config.curve = cv[1]; changed = true end
+        if imgui.SliderFloat('Curve (-1..1, 0=straight)', cv, -1.0, 1.0, '%.2f') then config.curve = cv[1]; changed = true end
 
         local vert = { config.vertical }
         if imgui.Checkbox('Vertical', vert) then config.vertical = vert[1]; changed = true end
