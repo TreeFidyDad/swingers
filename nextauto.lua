@@ -67,6 +67,7 @@ local swing = {
     pause_frac    = 0,     -- arc fraction captured when the freeze/pause began
     pause_until   = 0,     -- os.clock() until which the arc is frozen (post-action lock)
     freeze_safety = 0,     -- absolute backstop release time for an open-ended freeze
+    skip_sample   = false, -- next melee gap spans an action; don't feed it to the average
     was_engaged   = nil,
 }
 
@@ -197,7 +198,11 @@ end
 
 local function record_swing()
     local t_now = os.clock()
-    if swing.last_swing > 0 then
+    -- Only sample clean melee->melee gaps. After an action (WS/JA/spell/etc.)
+    -- last_swing holds a synthetic baseline, so the first swing afterward would
+    -- corrupt the rolling weapon-delay average (e.g. Sneak Attack making autos
+    -- read far too fast). Skip that one gap and resync the baseline to reality.
+    if swing.last_swing > 0 and not swing.skip_sample then
         local gap = t_now - swing.last_swing
         local interval = swing.interval or get_main_weapon_delay()
         local ceiling
@@ -218,6 +223,7 @@ local function record_swing()
     swing.action_frozen = false
     swing.pause_until   = 0
     swing.pause_frac    = 0
+    swing.skip_sample   = false
 end
 
 -- Freeze the arc in place (open-ended) until a matching finish packet or the
@@ -227,6 +233,7 @@ local function freeze_now()
         swing.pause_frac = current_frac()
     end
     swing.action_frozen = true
+    swing.skip_sample   = true
     swing.freeze_safety = os.clock() + FREEZE_TIMEOUT
 end
 
@@ -238,6 +245,7 @@ local function pause_and_resume(lock, frac)
     swing.pause_frac    = pf
     swing.pause_until   = os.clock() + lock
     swing.action_frozen = false
+    swing.skip_sample   = true
     if interval then
         -- last_swing placed so elapsed == pf*interval exactly when the lock ends
         swing.last_swing = swing.pause_until - pf * interval
@@ -267,6 +275,7 @@ ashita.events.register('packet_in', 'nextauto_pkt_cb', function(e)
         swing.action_frozen = false
         swing.pause_until   = 0
         swing.pause_frac    = 0
+        swing.skip_sample   = false
         return
     end
     if e.id ~= 0x28 then return end
@@ -409,6 +418,7 @@ ashita.events.register('d3d_present', 'nextauto_render_cb', function()
         swing.action_frozen = false
         swing.pause_until   = 0
         swing.pause_frac    = 0
+        swing.skip_sample   = false
         if not engaged then swing.samples = {} end
         swing.was_engaged = engaged
     end
