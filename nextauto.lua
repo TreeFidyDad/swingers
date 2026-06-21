@@ -1,8 +1,8 @@
 addon.name    = 'nextauto'
 addon.author  = 'TreeFidyDad'
-addon.version = '2.0'
+addon.version = '2.0.1'
 addon.desc    = 'Configurable next-auto-attack swing timer (arc or bar) with color gradient.'
-addon.link    = 'https://github.com/TreeFidyDad/swingers'
+addon.link    = 'https://github.com/TreeFidyDad/nextauto'
 
 require('common')
 local imgui = require('imgui')
